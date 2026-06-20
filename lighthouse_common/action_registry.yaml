@@ -1,0 +1,55 @@
+# FROZEN — do not edit, ask the team first.
+#
+# The finite vocabulary of actions Lighthouse can ever take (architecture §4.3).
+# The Guardian agent may ONLY emit an action_type that is a key under `actions`.
+# The deterministic safety gate (pipeline/classifier.py, C2) reads this file to
+# route each proposal:  registry["actions"][proposal.action_type] -> {reversible, stakes}
+#
+#   reversible: can the effect be undone?
+#   stakes:     low | high  (high = money out, account changes, irreversible comms)
+#
+# Routing rule (deterministic, no LLM):
+#   reversible AND stakes == low  -> autonomous
+#   otherwise                     -> human_gate
+#   (and confidence below floor   -> watch_only, decided in the classifier)
+
+actions:
+  quarantine_email:
+    reversible: true
+    stakes: low
+    description: Move a suspected scam email to a holding folder.
+
+  flag_transaction:
+    reversible: true
+    stakes: low
+    description: Annotate a charge as suspicious for review.
+
+  block_sender:
+    reversible: true
+    stakes: low
+    description: Block a sender address.
+
+  label_and_notify:
+    reversible: true
+    stakes: low
+    description: Tag an item and tell the guardian.
+
+  pay_bill:
+    reversible: false
+    stakes: high
+    description: Pay an outstanding bill (money out).
+
+  freeze_card:
+    reversible: true
+    stakes: high
+    description: Freeze a card (reversible but disruptive).
+
+  reset_credentials:
+    reversible: false
+    stakes: high
+    description: Change a password / recover an account.
+
+  reply_to_sender:
+    reversible: false
+    stakes: high
+    description: Send a message to a sender (cannot unsend).

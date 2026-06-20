@@ -1,0 +1,17 @@
+# Postgres with pgvector for Lighthouse. Start with: docker compose up -d
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: lighthouse-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lighthouse
+      POSTGRES_PASSWORD: lighthouse
+      POSTGRES_DB: lighthouse
+    ports:
+      - "5432:5432"
+    volumes:
+      - lighthouse_pgdata:/var/lib/postgresql/data
+
+volumes:
+  lighthouse_pgdata:

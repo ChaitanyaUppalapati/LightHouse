@@ -1,0 +1,9 @@
+# Shared Python dependencies for the pipeline/ and data/ tracks.
+uagents
+pydantic
+anthropic
+fastapi
+uvicorn
+psycopg2-binary
+pyyaml
+python-dotenv
