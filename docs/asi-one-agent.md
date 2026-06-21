@@ -38,17 +38,22 @@ gate → executor — and runs the human-gate approval **in chat** (it asks, you
 
 ## See it run end-to-end without an Agentverse account
 
-```
-# Multi-agent (recommended) — watch the coordinator -> watcher -> guardian -> executor hops:
-AGENT_MAILBOX=0 DEMO_MODE=1 python -m pipeline.orchestration demo
+**Interactive (recommended)** — you paste emails and approve/deny yourself, over the
+real Chat Protocol, with the full multi-agent flow behind it:
 
-# Single-agent equivalent:
-AGENT_MAILBOX=0 DEMO_MODE=1 python -m pipeline.demo_e2e
 ```
+AGENT_MAILBOX=0 DEMO_MODE=1 python -m pipeline.chat_cli
+```
+Type a message, then a blank line to send; `quit` to exit. Paste a phishing email (it
+auto-quarantines), a "pay $200 to unlock" scam (it asks → you type `deny`), or a normal
+note (no action). Use `DEMO_MODE=0` with the tunnel (below) to drive a real browser.
 
-Both drive the coordinator with the **real Chat Protocol** messages ASI:One sends and
-play both scenarios automatically: a phishing email (auto-quarantined) and a "pay
-$200" scam (asks the family in chat → reply `deny` → nothing happens).
+**Scripted demo** — plays both scenarios automatically (good for a quick screen-record):
+
+```
+AGENT_MAILBOX=0 DEMO_MODE=1 python -m pipeline.orchestration demo   # multi-agent, shows the hops
+AGENT_MAILBOX=0 DEMO_MODE=1 python -m pipeline.demo_e2e             # single-agent equivalent
+```
 
 ## Two demo scenarios (both run entirely in ASI:One chat)
 
