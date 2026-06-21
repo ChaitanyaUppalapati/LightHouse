@@ -95,10 +95,15 @@ class ResultMsg(Model):
 
 
 # --- The agents (separation of powers) ----------------------------------------
+# All four register on Agentverse when run live (AGENT_MAILBOX=1) so each has its own
+# profile — the multi-agent story. AGENT_MAILBOX=0 runs them all locally in a Bureau.
 
-watcher_agent = Agent(name="watcher", seed="lh-orch-watcher-seed", port=8111)
-guardian_agent = Agent(name="guardian", seed="lh-orch-guardian-seed", port=8112)
-executor_agent = Agent(name="executor", seed="lh-orch-executor-seed", port=8113)
+watcher_agent = Agent(name="lighthouse-watcher", seed="lh-orch-watcher-seed", port=8111,
+                      mailbox=_MAILBOX, publish_agent_details=_MAILBOX)
+guardian_agent = Agent(name="lighthouse-guardian", seed="lh-orch-guardian-seed", port=8112,
+                       mailbox=_MAILBOX, publish_agent_details=_MAILBOX)
+executor_agent = Agent(name="lighthouse-executor", seed="lh-orch-executor-seed", port=8113,
+                       mailbox=_MAILBOX, publish_agent_details=_MAILBOX)
 coordinator = Agent(
     name="lighthouse",
     seed=os.getenv("LIGHTHOUSE_AGENT_SEED", "lighthouse-asi-one-coordinator-seed"),
