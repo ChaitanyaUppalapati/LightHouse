@@ -33,7 +33,7 @@ for _p in (_HERE, _REPO_ROOT):
 from uagents import Agent, Context  # noqa: E402
 
 from lighthouse_common.schemas import Signal, ThreatAssessment  # noqa: E402
-from pipeline.arize_tracing import init_tracing  # noqa: E402
+from pipeline.phoenix_tracing import init_tracing  # noqa: E402
 
 load_dotenv()
 init_tracing()  # ship Claude calls to Arize as spans (no-op without keys)

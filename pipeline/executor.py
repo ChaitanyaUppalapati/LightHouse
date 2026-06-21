@@ -32,7 +32,7 @@ for _p in (_HERE, _REPO_ROOT):
         sys.path.insert(0, _p)
 
 from lighthouse_common.schemas import ActionProposal, ActionResult  # noqa: E402
-from pipeline.arize_tracing import init_tracing, span  # noqa: E402
+from pipeline.phoenix_tracing import init_tracing, span  # noqa: E402
 
 load_dotenv()
 init_tracing()

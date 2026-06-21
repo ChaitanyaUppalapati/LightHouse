@@ -10,6 +10,6 @@ python-dotenv
 
 # C5 executor — Browserbase + Stagehand (computer-use)
 stagehand
-# C6 — Arize tracing + Anthropic auto-instrumentation
-arize-otel
+# C6 — Phoenix (Arize Phoenix) tracing + Anthropic auto-instrumentation
+arize-phoenix-otel
 openinference-instrumentation-anthropic

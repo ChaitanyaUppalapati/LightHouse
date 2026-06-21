@@ -35,7 +35,7 @@ from lighthouse_common.schemas import (  # noqa: E402
     ThreatAssessment,
 )
 from pipeline.classifier import _load_registry, route_action  # noqa: E402
-from pipeline.arize_tracing import init_tracing  # noqa: E402
+from pipeline.phoenix_tracing import init_tracing  # noqa: E402
 
 load_dotenv()
 init_tracing()  # ship Claude calls to Arize as spans (no-op without keys)
