@@ -33,7 +33,7 @@ for _p in (_HERE, _REPO_ROOT):
 from uagents import Agent, Context  # noqa: E402
 
 from lighthouse_common.schemas import Signal, ThreatAssessment  # noqa: E402
-from pipeline.phoenix_tracing import init_tracing  # noqa: E402
+from pipeline.phoenix_tracing import init_tracing, span  # noqa: E402
 
 load_dotenv()
 init_tracing()  # ship Claude calls to Arize as spans (no-op without keys)
@@ -110,36 +110,51 @@ _OUTPUT_SCHEMA = {
 
 def classify_signal(signal: Signal) -> ThreatAssessment:
     """Run Claude over a Signal and return a ThreatAssessment (the C1 core)."""
-    response = _client.messages.create(
-        model=MODEL,
-        max_tokens=1024,
-        temperature=0,
-        system=_SYSTEM_PROMPT,
-        messages=[
-            {
-                "role": "user",
-                "content": (
-                    "Classify this item the person received:\n\n"
-                    + json.dumps(signal.payload, indent=2)
-                ),
-            }
-        ],
-        output_config={"format": {"type": "json_schema", "schema": _OUTPUT_SCHEMA}},
-    )
+    with span(
+        "watcher.classify_signal",
+        **{
+            "openinference.span.kind": "CHAIN",
+            "input.value": json.dumps(signal.payload),
+            "signal.source": signal.source,
+        },
+    ) as s:
+        response = _client.messages.create(
+            model=MODEL,
+            max_tokens=1024,
+            temperature=0,
+            system=_SYSTEM_PROMPT,
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        "Classify this item the person received:\n\n"
+                        + json.dumps(signal.payload, indent=2)
+                    ),
+                }
+            ],
+            output_config={"format": {"type": "json_schema", "schema": _OUTPUT_SCHEMA}},
+        )
 
-    # output_config.format guarantees the first text block is schema-valid JSON.
-    text = next(b.text for b in response.content if b.type == "text")
-    verdict = json.loads(text)
+        # output_config.format guarantees the first text block is schema-valid JSON.
+        text = next(b.text for b in response.content if b.type == "text")
+        verdict = json.loads(text)
 
-    return ThreatAssessment(
-        assessment_id=str(uuid.uuid4()),
-        signal_id=signal.signal_id,
-        category=verdict["category"],
-        severity=verdict["severity"],
-        confidence=float(verdict["confidence"]),
-        rationale=verdict["rationale"],
-        evidence=verdict["evidence"],
-    )
+        assessment = ThreatAssessment(
+            assessment_id=str(uuid.uuid4()),
+            signal_id=signal.signal_id,
+            category=verdict["category"],
+            severity=verdict["severity"],
+            confidence=float(verdict["confidence"]),
+            rationale=verdict["rationale"],
+            evidence=verdict["evidence"],
+        )
+        if s is not None:
+            s.set_attribute(
+                "output.value",
+                f"{assessment.category}/{assessment.severity} "
+                f"(confidence {assessment.confidence})",
+            )
+        return assessment
 
 
 def _print_assessment(label: str, signal: Signal, assessment: ThreatAssessment) -> None:

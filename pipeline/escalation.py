@@ -31,7 +31,7 @@ for _p in (_HERE, _REPO_ROOT):
 from uagents import Agent, Context  # noqa: E402
 
 from lighthouse_common.schemas import ActionProposal  # noqa: E402
-from pipeline.phoenix_tracing import init_tracing  # noqa: E402
+from pipeline.phoenix_tracing import init_tracing, span  # noqa: E402
 
 load_dotenv()
 init_tracing()  # ship Claude calls to Arize as spans (no-op without keys)
@@ -54,24 +54,31 @@ sentences and end with one clear yes/no question. No jargon, no greeting, no sig
 
 def compose_message(proposal: ActionProposal) -> str:
     """Use Claude to turn an ActionProposal into a plain message for the family."""
-    response = _client.messages.create(
-        model=MODEL,
-        max_tokens=256,
-        temperature=0,
-        system=_SYSTEM_PROMPT,
-        messages=[
-            {
-                "role": "user",
-                "content": (
-                    f"Proposed action: {proposal.action_type}\n"
-                    f"Why: {proposal.rationale}\n"
-                    f"What it would do: {proposal.expected_effect}\n\n"
-                    "Write the message asking the family to approve or deny."
-                ),
-            }
-        ],
-    )
-    return next(b.text for b in response.content if b.type == "text").strip()
+    with span(
+        "escalation.compose_message",
+        **{"openinference.span.kind": "CHAIN", "input.value": proposal.action_type},
+    ) as s:
+        response = _client.messages.create(
+            model=MODEL,
+            max_tokens=256,
+            temperature=0,
+            system=_SYSTEM_PROMPT,
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        f"Proposed action: {proposal.action_type}\n"
+                        f"Why: {proposal.rationale}\n"
+                        f"What it would do: {proposal.expected_effect}\n\n"
+                        "Write the message asking the family to approve or deny."
+                    ),
+                }
+            ],
+        )
+        message = next(b.text for b in response.content if b.type == "text").strip()
+        if s is not None:
+            s.set_attribute("output.value", message)
+        return message
 
 
 def _post_json(url: str, body: dict) -> dict:
@@ -124,13 +131,20 @@ def escalate_sync(proposal: ActionProposal, log=print) -> str:
 
     Shared by the uAgent handler and the demo runner.
     """
-    message = compose_message(proposal)
-    log(f"message to family: {message}")
-    approval_id = request_approval(proposal, message)
-    log(f"posted approval {approval_id}; waiting for the family to decide...")
-    decision = wait_for_decision(approval_id)
-    log(f"decision: {decision}")
-    return decision
+    with span(
+        "escalation.escalate",
+        **{"openinference.span.kind": "AGENT", "action_type": proposal.action_type},
+    ) as s:
+        message = compose_message(proposal)
+        log(f"message to family: {message}")
+        approval_id = request_approval(proposal, message)
+        log(f"posted approval {approval_id}; waiting for the family to decide...")
+        decision = wait_for_decision(approval_id)
+        log(f"decision: {decision}")
+        if s is not None:
+            s.set_attribute("approval_id", approval_id)
+            s.set_attribute("output.value", decision)
+        return decision
 
 
 # --- The uAgent ---------------------------------------------------------------

@@ -35,7 +35,7 @@ from lighthouse_common.schemas import (  # noqa: E402
     ThreatAssessment,
 )
 from pipeline.classifier import _load_registry, route_action  # noqa: E402
-from pipeline.phoenix_tracing import init_tracing  # noqa: E402
+from pipeline.phoenix_tracing import init_tracing, span  # noqa: E402
 
 load_dotenv()
 init_tracing()  # ship Claude calls to Arize as spans (no-op without keys)
@@ -104,6 +104,18 @@ _OUTPUT_SCHEMA = {
 
 def propose_action(assessment: ThreatAssessment) -> ActionProposal:
     """Use Claude to pick ONE registry action and build an ActionProposal (C3 core)."""
+    with span(
+        "guardian.propose_action",
+        **{
+            "openinference.span.kind": "CHAIN",
+            "input.value": f"{assessment.category}/{assessment.severity} "
+            f"(conf {assessment.confidence}): {assessment.rationale}",
+        },
+    ) as s:
+        return _propose_action(assessment, s)
+
+
+def _propose_action(assessment: ThreatAssessment, s=None) -> ActionProposal:
     response = _client.messages.create(
         model=MODEL,
         max_tokens=1024,
@@ -134,7 +146,7 @@ def propose_action(assessment: ThreatAssessment) -> ActionProposal:
     if choice["action_type"] not in _REGISTRY:
         choice["action_type"] = "label_and_notify"
 
-    return ActionProposal(
+    proposal = ActionProposal(
         proposal_id="prop_" + uuid.uuid4().hex[:12],
         assessment_id=assessment.assessment_id,
         action_type=choice["action_type"],
@@ -142,6 +154,9 @@ def propose_action(assessment: ThreatAssessment) -> ActionProposal:
         rationale=choice["rationale"],
         expected_effect=choice["expected_effect"],
     )
+    if s is not None:
+        s.set_attribute("output.value", f"action={proposal.action_type}")
+    return proposal
 
 
 def handle_assessment_sync(assessment: ThreatAssessment, log=print):
@@ -151,13 +166,18 @@ def handle_assessment_sync(assessment: ThreatAssessment, log=print):
     the proposal is sent to) is decided here; the actual send happens in the agent
     handler. `log` lets the runner print and the agent use ctx.logger.
     """
-    proposal = propose_action(assessment)
-    decision = route_action(proposal, assessment)
-    log(
-        f"proposed {proposal.action_type} -> route={decision.route} "
-        f"({decision.reason})"
-    )
-    return proposal, decision
+    with span("guardian.handle_assessment", **{"openinference.span.kind": "AGENT"}) as s:
+        proposal = propose_action(assessment)
+        decision = route_action(proposal, assessment)
+        if s is not None:
+            s.set_attribute("action_type", proposal.action_type)
+            s.set_attribute("route", decision.route)
+            s.set_attribute("output.value", f"{proposal.action_type} -> {decision.route}")
+        log(
+            f"proposed {proposal.action_type} -> route={decision.route} "
+            f"({decision.reason})"
+        )
+        return proposal, decision
 
 
 # --- The uAgent ---------------------------------------------------------------
