@@ -7,3 +7,13 @@ uvicorn
 psycopg2-binary
 pyyaml
 python-dotenv
+
+# C5 executor — Browserbase + Stagehand (computer-use)
+stagehand
+# C6 — Phoenix (Arize Phoenix) tracing + Anthropic auto-instrumentation
+arize-phoenix-otel
+openinference-instrumentation-anthropic
+# C6 — Phoenix evals + client (LLM-as-judge over traces, log annotations back)
+arize-phoenix-client
+arize-phoenix-evals
+pandas
