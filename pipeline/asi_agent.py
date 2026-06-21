@@ -154,18 +154,21 @@ def _run_pipeline(text: str, sender: str) -> str:
 
 
 def _resolve_pending(text: str, sender: str) -> str | None:
-    """If this sender has a pending approval and said approve/deny, resolve it."""
+    """If this sender has a pending approval, resolve it on a short approve/deny reply.
+    Anything longer (e.g. a new email pasted) drops the stale decision and is analyzed
+    fresh, so the chat never gets stuck behind an old pending."""
     pending = _pending.get(sender)
     if not pending:
         return None
-    word = text.strip().lower()
-    if word not in ("approve", "approved", "yes", "deny", "denied", "no"):
-        return (
-            "You have a pending decision. Please reply `approve` or `deny`."
-        )
+    words = text.lower().split()
+    approve = bool(set(words) & {"approve", "approved", "yes"})
+    deny = bool(set(words) & {"deny", "denied", "no"})
+    if len(words) > 4 or (not approve and not deny):
+        _pending.pop(sender, None)   # not a decision -> abandon it, treat as new input
+        return None
     _pending.pop(sender, None)
     proposal = pending["proposal"]
-    if word in ("approve", "approved", "yes"):
+    if approve:
         result = execute(proposal)
         return (
             f"✅ Approved. I carried out **{proposal.action_type}**. "
@@ -206,6 +209,10 @@ async def handle_chat(ctx: Context, sender: str, msg: ChatMessage) -> None:
         return
 
     text = "".join(c.text for c in msg.content if isinstance(c, TextContent)).strip()
+    # ASI:One prepends the agent's @address mention to every message — drop @-mention
+    # tokens so 'approve'/'deny' match and the email text is clean (email addresses
+    # like name@domain don't start with '@', so they're untouched).
+    text = " ".join(w for w in text.split() if not w.startswith("@")).strip()
     if not text:
         return
 
