@@ -1,47 +1,67 @@
 @import "tailwindcss";
 
-/* Lighthouse design tokens — calm, trustworthy, built for an older person's family.
-   Base font is large on purpose: nothing on these screens should be below 18px. */
+/* Lighthouse "Harbor Dawn" — warm, human, coastal. Cream paper, sea-navy ink,
+   a honey-amber guiding light, sage for safe actions, terracotta for attention.
+   Designed for an older person's family: large, legible, calm. */
 :root {
   color-scheme: light;
 }
 
 html {
-  font-size: 18px; /* 1rem = 18px, so default body text already clears the 18px floor */
+  font-size: 17px;
 }
 
 body {
   margin: 0;
-  /* Figtree: clean, accessible, trustworthy (design-system pick for healthcare).
-     System fonts stay as the fallback so text never disappears while the font loads. */
-  font-family: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif;
-  background-color: #f1f5f9; /* slate-100 — soft, not stark white */
-  color: #0f172a; /* slate-900 — high contrast */
+  /* Hanken Grotesk for body/UI; Fraunces (the .lh-serif helper) for warm headings. */
+  font-family: "Hanken Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  background-color: #faf6ef;
+  color: #1b2a41;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Make focus obvious for keyboard users / accessibility. */
+.lh-serif {
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+}
+
+/* Obvious focus ring for keyboard users — uses the warm accent. */
 :focus-visible {
-  outline: 3px solid #2563eb;
+  outline: 3px solid #e7a33e;
   outline-offset: 2px;
 }
 
-/* Gentle entrance animation. Motion is OFF by default and only enabled when the
-   user has NOT asked their system to reduce motion — accessibility first. */
-@media (prefers-reduced-motion: no-preference) {
-  @keyframes fade-up {
-    from {
-      opacity: 0;
-      transform: translateY(12px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+/* ---- Motion (gentle, on-brand) ---- */
+@keyframes lh-rotate { to { transform: rotate(360deg); } }
+@keyframes lh-pulse { 0%, 100% { opacity: .45; transform: scale(1); } 50% { opacity: 1; transform: scale(1.4); } }
+@keyframes lh-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes lh-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lh-glow { 0%, 100% { opacity: .5; } 50% { opacity: .85; } }
+@keyframes lh-toast { 0% { opacity: 0; transform: translateY(-12px) scale(.96); } 12%, 82% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-8px) scale(.98); } }
 
-  .animate-fade-up {
-    animation: fade-up 0.4s ease-out both;
+.lh-rise { animation: lh-rise .6s ease both; }
+.lh-fade { animation: lh-fade .5s ease both; }
+
+/* ---- Interaction states (React inline styles can't do :hover) ---- */
+.lh-card { transition: transform .2s ease, box-shadow .2s ease; }
+.lh-card:hover { transform: translateY(-3px); box-shadow: 0 16px 34px -16px rgba(27, 42, 65, .36); }
+
+.lh-approve { transition: background .2s ease, transform .12s ease; }
+.lh-approve:hover { background: #527a64; transform: translateY(-1px); }
+.lh-approve:active { transform: translateY(1px); }
+
+.lh-deny { transition: background .2s ease, border-color .2s ease; }
+.lh-deny:hover { background: rgba(201, 96, 63, .1); border-color: rgba(201, 96, 63, .8); }
+
+.lh-undo:hover { text-decoration: underline; }
+.lh-row { transition: background .2s ease; }
+.lh-row:hover { background: #fbf7ef; }
+.lh-tab { transition: all .2s ease; }
+
+/* Accessibility: honor reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }

@@ -63,7 +63,7 @@ export const handledActions = [
 export const familyNote = {
   from: "Priya",
   relation: "your daughter",
-  message: "Thinking of you today — I'll call after lunch. Love you. 💙",
+  message: "Thinking of you today. I'll call after lunch. Love you. 💙",
 };
 
 export const dayReminder = "A little walk this afternoon would be lovely.";
@@ -75,14 +75,14 @@ export const timelineEvents = [
     id: "evt_3001",
     type: "approval_requested",
     title: "Asked family for a decision",
-    detail: 'Pay $200 to "unlock bank account"? — waiting for your answer.',
+    detail: 'Pay $200 to "unlock bank account"? Waiting for your answer.',
     at: "2026-06-20T09:14:20",
   },
   {
     id: "evt_3002",
     type: "scam_detected",
     title: "Flagged an email as a scam",
-    detail: 'Fake "SecureBank" payment demand — sender address did not match.',
+    detail: 'Fake "SecureBank" payment demand. Sender address did not match.',
     at: "2026-06-20T09:14:05",
   },
   {
@@ -117,7 +117,7 @@ export const timelineEvents = [
     id: "evt_3007",
     type: "email_received",
     title: "New email arrived",
-    detail: 'Subject: "Your package #4471 is held — pay redelivery fee"',
+    detail: 'Subject: "Your package #4471 is held. Pay redelivery fee."',
     at: "2026-06-20T07:48:00",
   },
 ];

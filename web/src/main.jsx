@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from "./App.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Me from "./pages/Me.jsx";
+import Inbox from "./pages/Inbox.jsx";
+import Bank from "./pages/Bank.jsx";
 import "./index.css";
 
 // Routing is set up now so later web tasks (S3 /me, S4 /inbox, S5 /bank) just add routes.
@@ -16,6 +18,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <Route path="/" element={<App />}>
           <Route index element={<Dashboard />} />
           <Route path="me" element={<Me />} />
+          <Route path="inbox" element={<Inbox />} />
+          <Route path="bank" element={<Bank />} />
         </Route>
       </Routes>
     </BrowserRouter>
