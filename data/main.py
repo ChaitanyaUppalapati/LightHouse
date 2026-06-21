@@ -1,8 +1,11 @@
 """Lighthouse data service — FastAPI app (data/ track).
 
-Task K2: the mock email feed. Serves fake email Signals one at a time from
-GET /signals/next so Chaitanya's Watcher (C1) has a real HTTP source to classify
-against. Later tasks (K3 ledger, K4 approval bridge, K5 Sentry) extend this app.
+K2: the mock email feed — GET /signals/next gives Chaitanya's Watcher (C1) a
+real HTTP source of email Signals.
+K3: the append-only ledger — POST /ledger writes an event, GET /ledger reads a
+person's events newest-first. ledger_events is locked append-only at startup
+(our tamper-evidence feature, arch §9).
+Later tasks (K4 approval bridge, K5 Sentry) extend this app.
 
 Run it:
     uvicorn data.main:app --port 8001      # from the repo root
@@ -13,11 +16,14 @@ import json
 import os
 import sys
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from itertools import cycle
+from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 # Make the repo root importable so lighthouse_common resolves regardless of how
 # the app is launched (uvicorn data.main:app, or python data/main.py).
@@ -30,8 +36,19 @@ for _p in (_HERE, _REPO_ROOT):
 from lighthouse_common.schemas import Signal          # noqa: E402
 from lighthouse_common.demo_ids import MARGARET_PERSON_ID  # noqa: E402
 from sample_emails import SAMPLE_EMAILS               # noqa: E402
+from init_db import apply_schema                      # noqa: E402
+import ledger                                         # noqa: E402
 
-app = FastAPI(title="Lighthouse data service", version="0.2.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Ensure the tables exist and the ledger is locked append-only before serving.
+    apply_schema()
+    ledger.apply_append_only()
+    yield
+
+
+app = FastAPI(title="Lighthouse data service", version="0.3.0", lifespan=lifespan)
 
 # Sonakshi's dashboard (Vite) runs on :5173 and calls this API from the browser.
 app.add_middleware(
@@ -78,6 +95,34 @@ def next_signal() -> dict:
     """
     signal = _email_to_signal(next(_email_cycle))
     return json.loads(signal.json())
+
+
+# --- Ledger (K3) --------------------------------------------------------------
+# The immutable audit trail (arch §9). Every meaningful thing Lighthouse does is
+# appended here; the table is locked append-only at startup so history cannot be
+# rewritten. This is a local request model (pydantic v2) — unrelated to the
+# frozen uagents schemas.
+
+class LedgerEventIn(BaseModel):
+    event_type: str
+    details: dict = {}
+    person_id: Optional[str] = None
+
+
+@app.post("/ledger")
+def post_ledger(event: LedgerEventIn) -> dict:
+    """Append an event to the immutable ledger and return the stored row."""
+    return ledger.add_event(
+        event_type=event.event_type,
+        details=event.details,
+        person_id=event.person_id,
+    )
+
+
+@app.get("/ledger")
+def get_ledger(person_id: Optional[str] = None) -> list[dict]:
+    """Return ledger events newest-first, optionally filtered by person_id."""
+    return ledger.get_events(person_id=person_id)
 
 
 if __name__ == "__main__":
