@@ -118,3 +118,24 @@ CREATE TABLE IF NOT EXISTS ledger_events (
 
 CREATE INDEX IF NOT EXISTS idx_ledger_events_person ON ledger_events(person_id);
 CREATE INDEX IF NOT EXISTS idx_ledger_events_ts ON ledger_events(ts DESC);
+
+-- ---------------------------------------------------------------------------
+-- Approvals (K4: the approval bridge §4.4)
+-- The link between the Escalation agent (C4) and the family dashboard (S6).
+-- Escalation creates a pending approval with a plain message; the dashboard
+-- lists pending ones and records the family's decision; the agent polls for it.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS approvals (
+    approval_id TEXT PRIMARY KEY,
+    person_id   UUID,
+    proposal    JSONB NOT NULL DEFAULT '{}'::jsonb,   -- the ActionProposal being gated
+    message     TEXT NOT NULL,                         -- plain 6th-grade ask for the family
+    detail      TEXT,                                  -- optional longer explanation
+    status      TEXT NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending', 'approved', 'denied')),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    decided_at  TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals(status);
