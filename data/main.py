@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from itertools import cycle
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -38,6 +38,7 @@ from lighthouse_common.demo_ids import MARGARET_PERSON_ID  # noqa: E402
 from sample_emails import SAMPLE_EMAILS               # noqa: E402
 from init_db import apply_schema                      # noqa: E402
 import ledger                                         # noqa: E402
+import approvals                                      # noqa: E402
 
 
 @asynccontextmanager
@@ -131,6 +132,59 @@ def post_ledger(event: LedgerEventIn) -> dict:
 def get_ledger(person_id: Optional[str] = None) -> list[dict]:
     """Return ledger events newest-first, optionally filtered by person_id."""
     return ledger.get_events(person_id=person_id)
+
+
+# --- Approval bridge (K4, arch §4.4) -----------------------------------------
+# The seam between Chaitanya's Escalation agent (C4) and Sonakshi's dashboard
+# (S6). Every approval and decision is also written to the ledger.
+
+class ApprovalIn(BaseModel):
+    proposal: dict = {}          # the ActionProposal being gated
+    message: str                 # plain 6th-grade ask for the family
+    person_id: Optional[str] = None
+    detail: Optional[str] = None
+
+
+class DecisionIn(BaseModel):
+    decision: str                # "approved" or "denied"
+
+
+@app.post("/approvals")
+def post_approval(body: ApprovalIn) -> dict:
+    """Escalation creates a pending approval. Returns the stored row (approval_id)."""
+    return approvals.create_approval(
+        proposal=body.proposal,
+        message=body.message,
+        person_id=body.person_id,
+        detail=body.detail,
+    )
+
+
+@app.get("/approvals")
+def list_approvals(status: Optional[str] = None) -> list[dict]:
+    """Dashboard lists approvals, e.g. ?status=pending. Newest first."""
+    return approvals.list_approvals(status=status)
+
+
+@app.get("/approvals/{approval_id}")
+def get_approval(approval_id: str):
+    """The agent polls this for the decision. 404 if the approval is unknown."""
+    row = approvals.get_approval(approval_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="approval not found")
+    return row
+
+
+@app.post("/approvals/{approval_id}/decide")
+def decide_approval(approval_id: str, body: DecisionIn) -> dict:
+    """Dashboard records the family's decision (approved/denied)."""
+    if body.decision not in ("approved", "denied"):
+        raise HTTPException(status_code=400,
+                            detail="decision must be 'approved' or 'denied'")
+    row = approvals.decide_approval(approval_id, body.decision)
+    if row is None:
+        raise HTTPException(status_code=404, detail="approval not found")
+    return row
 
 
 if __name__ == "__main__":
