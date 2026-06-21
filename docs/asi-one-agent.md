@@ -26,18 +26,29 @@ gate → executor — and runs the human-gate approval **in chat** (it asks, you
 5. From the agent's **Agentverse profile**, click **Chat with Agent** → it opens in
    ASI:One. Paste a suspicious email and watch it classify → decide → act / ask.
 
+## Two entry points
+
+- **`pipeline/orchestration.py`** — the full **multi-agent** version: the coordinator
+  delegates to separate **Watcher → Guardian → Executor** agents over the Fetch
+  message bus (real agent-to-agent orchestration / separation of powers). **Use this
+  for the Fetch demo.** Run it for real with `python -m pipeline.orchestration`
+  (coordinator registers on Agentverse for ASI:One; the sub-agents run in-process).
+- **`pipeline/asi_agent.py`** — a simpler single coordinator agent that runs the same
+  pipeline as in-process tool calls. Lighter, same chat behaviour.
+
 ## See it run end-to-end without an Agentverse account
 
-`pipeline/demo_e2e.py` runs the coordinator + a `user` agent together in a uAgents
-Bureau and drives the coordinator with the **real Chat Protocol** messages ASI:One
-sends — so you can watch the full chat-in → pipeline → chat-out loop locally:
-
 ```
+# Multi-agent (recommended) — watch the coordinator -> watcher -> guardian -> executor hops:
+AGENT_MAILBOX=0 DEMO_MODE=1 python -m pipeline.orchestration demo
+
+# Single-agent equivalent:
 AGENT_MAILBOX=0 DEMO_MODE=1 python -m pipeline.demo_e2e
 ```
 
-It plays both scenarios automatically: a phishing email (auto-quarantined) and a
-"pay $200" scam (asks the family in chat → replies `deny` → nothing happens).
+Both drive the coordinator with the **real Chat Protocol** messages ASI:One sends and
+play both scenarios automatically: a phishing email (auto-quarantined) and a "pay
+$200" scam (asks the family in chat → reply `deny` → nothing happens).
 
 ## Two demo scenarios (both run entirely in ASI:One chat)
 
