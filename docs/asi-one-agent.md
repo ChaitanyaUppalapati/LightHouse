@@ -26,6 +26,19 @@ gate → executor — and runs the human-gate approval **in chat** (it asks, you
 5. From the agent's **Agentverse profile**, click **Chat with Agent** → it opens in
    ASI:One. Paste a suspicious email and watch it classify → decide → act / ask.
 
+## See it run end-to-end without an Agentverse account
+
+`pipeline/demo_e2e.py` runs the coordinator + a `user` agent together in a uAgents
+Bureau and drives the coordinator with the **real Chat Protocol** messages ASI:One
+sends — so you can watch the full chat-in → pipeline → chat-out loop locally:
+
+```
+AGENT_MAILBOX=0 DEMO_MODE=1 python -m pipeline.demo_e2e
+```
+
+It plays both scenarios automatically: a phishing email (auto-quarantined) and a
+"pay $200" scam (asks the family in chat → replies `deny` → nothing happens).
+
 ## Two demo scenarios (both run entirely in ASI:One chat)
 
 - **Autonomous:** paste a phishing email → "scam_phishing, high" → it auto-quarantines

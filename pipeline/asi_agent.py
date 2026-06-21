@@ -54,12 +54,15 @@ from pipeline.watcher import classify_signal  # noqa: E402
 load_dotenv()
 init_tracing()
 
+# mailbox=True registers on Agentverse for ASI:One. Set AGENT_MAILBOX=0 to run the
+# agent purely locally (e.g. the end-to-end Bureau demo, pipeline/demo_e2e.py).
+_MAILBOX = os.getenv("AGENT_MAILBOX", "1") == "1"
 agent = Agent(
     name="lighthouse",
     seed=os.getenv("LIGHTHOUSE_AGENT_SEED", "lighthouse-asi-one-coordinator-seed"),
-    port=8104,
-    mailbox=True,                # register on Agentverse so ASI:One can reach it
-    publish_agent_details=True,  # publish the agent's profile/manifest
+    port=int(os.getenv("AGENT_PORT", "8104")),
+    mailbox=_MAILBOX,
+    publish_agent_details=_MAILBOX,
 )
 
 chat = Protocol(spec=chat_protocol_spec)
