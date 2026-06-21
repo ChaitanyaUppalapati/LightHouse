@@ -43,6 +43,30 @@ def add_event(event_type: str, details: dict | None = None,
     return _row_to_dict(row)
 
 
+def save_signal(signal_id: str, person_id: str, source: str,
+                payload: dict, observed_at) -> None:
+    """Persist a Signal idempotently into the signals table.
+
+    The feed (/signals/next) hands out Signals; if the originating signal is
+    never stored, a later threat_assessments insert fails its FK
+    (threat_assessments.signal_id REFERENCES signals.signal_id). Storing the
+    signal here closes that seam. Fields match lighthouse_common/schemas.py:
+    signal_id, person_id, source, payload (JSONB), observed_at. No-op if the
+    signal_id already exists.
+    """
+    with closing(get_connection()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO signals (signal_id, person_id, source, payload, observed_at)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (signal_id) DO NOTHING
+                """,
+                (signal_id, person_id, source, json.dumps(payload), observed_at),
+            )
+        conn.commit()
+
+
 def get_events(person_id: str | None = None) -> list[dict]:
     """Return ledger events newest-first, optionally filtered by person."""
     with closing(get_connection()) as conn:
