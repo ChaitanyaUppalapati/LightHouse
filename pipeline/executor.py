@@ -72,39 +72,36 @@ def _demo_result(proposal: ActionProposal) -> ActionResult:
 
 
 def _run_browserbase(url: str, instructions: list[str]) -> dict:
-    """Drive a Browserbase session with Stagehand: open `url`, perform each natural-
-    language instruction, capture a screenshot. Returns an evidence dict.
+    """Drive a real Browserbase cloud browser with Stagehand: open `url`, then perform
+    each natural-language instruction. Returns an evidence dict with the Browserbase
+    session id + a replay URL (the recording is the evidence — there is no screenshot
+    op in the Stagehand SDK).
 
-    NOTE: the live computer-use path — the system's highest technical risk. The
-    Stagehand Python API is young and this must be validated against the running
-    mock pages at the Browserbase booth. DEMO_MODE is the demo path.
+    Verified against the live Stagehand 3.x API (sync client). NOTE: Browserbase runs
+    the browser in the cloud, so `url` must be PUBLICLY reachable — point MOCK_INBOX_URL
+    / MOCK_BANK_URL at a deployed/tunnelled page, not localhost. DEMO_MODE=1 is the demo
+    path and skips this entirely.
     """
-    import asyncio
+    from stagehand import Stagehand  # imported lazily so DEMO_MODE has no dependency
 
-    async def _go() -> dict:
-        from stagehand import AsyncStagehand  # imported lazily so DEMO_MODE has no dep
-
-        client = AsyncStagehand(
-            browserbase_api_key=BROWSERBASE_API_KEY,
-            model_api_key=ANTHROPIC_API_KEY,
-        )
-        session = await client.sessions.create(model_name=EXECUTOR_MODEL)
-        try:
-            await session.navigate(url=url)
-            for instruction in instructions:
-                observed = await session.observe(instruction=instruction)
-                action = observed.data.result[0].to_dict(exclude_none=True)
-                await session.act(input=action)
-            shot = await session.screenshot()
-            return {
-                "mode": "browserbase",
-                "screenshot": getattr(shot, "path", str(shot)),
-                "session_id": getattr(session, "id", None),
-            }
-        finally:
-            await session.end()
-
-    return asyncio.run(_go())
+    client = Stagehand(
+        browserbase_api_key=BROWSERBASE_API_KEY,
+        browserbase_project_id=BROWSERBASE_PROJECT_ID,
+        model_api_key=ANTHROPIC_API_KEY,
+    )
+    session = client.sessions.start(model_name=EXECUTOR_MODEL)
+    sid = session.data.session_id
+    try:
+        client.sessions.navigate(sid, url=url)
+        for instruction in instructions:
+            client.sessions.act(sid, input=instruction)  # input accepts a plain string
+        return {
+            "mode": "browserbase",
+            "session_id": sid,
+            "replay_url": f"https://www.browserbase.com/sessions/{sid}",
+        }
+    finally:
+        client.sessions.end(sid)
 
 
 def _quarantine_email(proposal: ActionProposal) -> ActionResult:
