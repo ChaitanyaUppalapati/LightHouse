@@ -1,73 +1,94 @@
-import {
-  MailIcon,
-  WarningIcon,
-  FolderIcon,
-  BellIcon,
-  BlockIcon,
-  TagIcon,
-  CheckIcon,
-  ClockIcon,
-} from "./Icons.jsx";
-import { formatClock, formatRelative } from "../lib/formatTime.js";
+import { formatRelative, formatClock } from "../lib/formatTime.js";
 
-// Each ledger event type maps to an icon + a color. Unknown types fall back to a clock,
+// Dot color per ledger event type. Unknown types fall back to a calm slate-blue,
 // so a new event_type from the backend (S6) never breaks the screen.
-const EVENT_STYLES = {
-  email_received: { Icon: MailIcon, ring: "bg-slate-100 text-slate-600" },
-  scam_detected: { Icon: WarningIcon, ring: "bg-amber-100 text-amber-700" },
-  email_quarantined: { Icon: FolderIcon, ring: "bg-blue-100 text-blue-700" },
-  sender_blocked: { Icon: BlockIcon, ring: "bg-red-100 text-red-700" },
-  transaction_flagged: { Icon: TagIcon, ring: "bg-purple-100 text-purple-700" },
-  family_notified: { Icon: BellIcon, ring: "bg-indigo-100 text-indigo-700" },
-  approval_requested: { Icon: WarningIcon, ring: "bg-amber-100 text-amber-700" },
-  approved: { Icon: CheckIcon, ring: "bg-green-100 text-green-700" },
-  denied: { Icon: BlockIcon, ring: "bg-red-100 text-red-700" },
+const DOT_COLORS = {
+  approval_requested: "#E7A33E",
+  scam_detected: "#C9603F",
+  email_received: "#235E6F",
+  family_notified: "#5E8B73",
+  email_quarantined: "#6E8694",
 };
-
-const FALLBACK = { Icon: ClockIcon, ring: "bg-slate-100 text-slate-600" };
 
 export default function Timeline({ events }) {
   if (!events?.length) {
     return (
-      <p className="rounded-xl border border-slate-200 bg-white p-6 text-lg text-slate-500">
+      <p style={{ fontSize: 16.5, color: "#8a7f6e", padding: "20px 4px" }}>
         Nothing yet. Lighthouse will record everything it does here.
       </p>
     );
   }
 
   return (
-    <ol className="relative space-y-5 border-l-2 border-slate-200 pl-6">
-      {events.map((event) => {
-        const { Icon, ring } = EVENT_STYLES[event.type] ?? FALLBACK;
+    <div>
+      {events.map((event, i) => {
+        const color = DOT_COLORS[event.type] || "#6E8694";
+        const first = i === 0;
+        const last = i === events.length - 1;
         return (
-          <li key={event.id} className="relative">
-            <span
-              className={`absolute -left-[2.45rem] flex h-9 w-9 items-center justify-center rounded-full ring-4 ring-slate-50 ${ring}`}
-            >
-              <Icon className="h-5 w-5" />
-            </span>
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                <p className="text-lg font-semibold text-slate-900">
-                  {event.title}
-                </p>
-                <time
-                  className="text-base text-slate-500"
-                  dateTime={event.at}
-                  title={formatClock(event.at)}
-                >
-                  {formatRelative(event.at)}
-                </time>
-              </div>
-              {event.detail && (
-                <p className="mt-1 text-lg leading-relaxed text-slate-600">
-                  {event.detail}
-                </p>
+          <div key={event.id} style={{ display: "flex", gap: 16, position: "relative", paddingBottom: 24 }}>
+            {/* rail + dot */}
+            <div style={{ position: "relative", width: 22, flex: "none" }}>
+              {!last && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 9,
+                    top: first ? 14 : 0,
+                    bottom: -24,
+                    width: 2,
+                    background: "#E7DECF",
+                  }}
+                />
               )}
+              <div
+                style={{
+                  position: "absolute",
+                  left: 1,
+                  top: 4,
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  background: color,
+                  border: "3px solid #FAF6EF",
+                  boxShadow: first ? "0 0 0 4px rgba(231,163,62,.22)" : "none",
+                }}
+              />
             </div>
-          </li>
+
+            {/* content — the newest event is gently highlighted */}
+            <div
+              style={
+                first
+                  ? {
+                      flex: 1,
+                      minWidth: 0,
+                      background: "rgba(231,163,62,.09)",
+                      border: "1px solid rgba(231,163,62,.22)",
+                      borderRadius: 12,
+                      padding: "12px 16px",
+                      marginTop: -4,
+                    }
+                  : { flex: 1, minWidth: 0, paddingTop: 1 }
+              }
+            >
+              <div style={{ fontSize: 15.5, fontWeight: 600, color: "#1B2A41" }}>{event.title}</div>
+              {event.detail && (
+                <div style={{ fontSize: 15, color: "#566570", lineHeight: 1.5, marginTop: 2, textWrap: "pretty" }}>
+                  {event.detail}
+                </div>
+              )}
+              <time
+                dateTime={event.at}
+                title={formatClock(event.at)}
+                style={{ display: "block", fontSize: 13, color: "#9a8f7c", marginTop: 6 }}
+              >
+                {formatRelative(event.at)}
+              </time>
+            </div>
+          </div>
         );
       })}
-    </ol>
+    </div>
   );
 }
