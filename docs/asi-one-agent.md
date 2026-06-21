@@ -65,6 +65,32 @@ $200" scam (asks the family in chat → reply `deny` → nothing happens).
 - [ ] 3–5 min demo video.
 - [ ] Problem + outcome summary.
 
+## Going live on Agentverse — the one interactive step
+
+Use the **single** coordinator for the mailbox connect (it prints a clean Inspector
+URL; the Bureau does not):
+
+```
+python -m pipeline.asi_agent
+```
+
+It logs a line like:
+```
+Agent inspector available at https://agentverse.ai/inspect/?uri=http%3A//127.0.0.1%3A8104&address=agent1q2m2n78...
+```
+Open that URL (logged in to agentverse.ai, promo `BERKELEYAIAV`) → **Connect → Mailbox**.
+The agent's profile then gets a **Chat with Agent** button that opens it in ASI:One
+(promo `BERKELEYAI`). Grab the agent profile URL + a shared chat URL for the submission.
+
+### Warnings you can safely ignore
+
+- `WARNING: I do not have enough funds to register on Almanac contract` — this is the
+  optional **on-chain** registration. The lines `Manifest published successfully` and
+  `Batch registration on Almanac API successful` are the ones that matter (Chat Protocol
+  + off-chain registry). No funds needed.
+- `WARNING: Agent mailbox not found: create one using the agent inspector` — expected
+  **until** you do the Inspector → Connect → Mailbox step above; it clears once connected.
+
 ## Notes
 
 - Run on Python 3.11/3.12 (uagents does not import on 3.14).
