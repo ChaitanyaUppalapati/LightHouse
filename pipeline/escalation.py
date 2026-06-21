@@ -31,8 +31,10 @@ for _p in (_HERE, _REPO_ROOT):
 from uagents import Agent, Context  # noqa: E402
 
 from lighthouse_common.schemas import ActionProposal  # noqa: E402
+from pipeline.arize_tracing import init_tracing  # noqa: E402
 
 load_dotenv()
+init_tracing()  # ship Claude calls to Arize as spans (no-op without keys)
 
 MODEL = "claude-sonnet-4-6"
 DATA_URL = os.getenv("DATA_URL", os.getenv("VITE_DATA_URL", "http://localhost:8001"))

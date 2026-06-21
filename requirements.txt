@@ -7,3 +7,9 @@ uvicorn
 psycopg2-binary
 pyyaml
 python-dotenv
+
+# C5 executor — Browserbase + Stagehand (computer-use)
+stagehand
+# C6 — Arize tracing + Anthropic auto-instrumentation
+arize-otel
+openinference-instrumentation-anthropic
