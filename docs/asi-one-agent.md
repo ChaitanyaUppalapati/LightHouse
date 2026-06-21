@@ -104,6 +104,8 @@ actually drive a browser via Browserbase + Stagehand, you need three things:
    cloudflared tunnel --url http://localhost:5173   # terminal 2 -> prints https://<rand>.trycloudflare.com
    ```
    (Install cloudflared once: `winget install cloudflare.cloudflared`, or use ngrok.)
+   `web/vite.config.js` already allows `.trycloudflare.com` / `.ngrok` hosts (Vite
+   otherwise returns "Blocked request. This host is not allowed.").
    Then point the URLs at the public tunnel in `.env`:
    ```
    MOCK_INBOX_URL=https://<rand>.trycloudflare.com/inbox
