@@ -94,6 +94,14 @@ def next_signal() -> dict:
     and return a plain JSON-ready dict.
     """
     signal = _email_to_signal(next(_email_cycle))
+    # Persist the signal so a later ThreatAssessment can reference it (FK seam).
+    ledger.save_signal(
+        signal.signal_id,
+        signal.person_id,
+        signal.source,
+        signal.payload,
+        signal.observed_at,
+    )
     return json.loads(signal.json())
 
 

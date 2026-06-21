@@ -8,6 +8,7 @@ decisions to the ledger through add_event()).
 
 import json
 import os
+from contextlib import closing
 
 from db import get_connection
 
@@ -18,7 +19,7 @@ def apply_append_only():
     """Make ledger_events append-only (REVOKE + trigger). Idempotent."""
     with open(_LOCKDOWN_SQL, "r") as f:
         sql = f.read()
-    with get_connection() as conn:
+    with closing(get_connection()) as conn:
         with conn.cursor() as cur:
             cur.execute(sql)
         conn.commit()
@@ -27,7 +28,7 @@ def apply_append_only():
 def add_event(event_type: str, details: dict | None = None,
               person_id: str | None = None) -> dict:
     """Append one event to the ledger and return the stored row."""
-    with get_connection() as conn:
+    with closing(get_connection()) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -42,9 +43,33 @@ def add_event(event_type: str, details: dict | None = None,
     return _row_to_dict(row)
 
 
+def save_signal(signal_id: str, person_id: str, source: str,
+                payload: dict, observed_at) -> None:
+    """Persist a Signal idempotently into the signals table.
+
+    The feed (/signals/next) hands out Signals; if the originating signal is
+    never stored, a later threat_assessments insert fails its FK
+    (threat_assessments.signal_id REFERENCES signals.signal_id). Storing the
+    signal here closes that seam. Fields match lighthouse_common/schemas.py:
+    signal_id, person_id, source, payload (JSONB), observed_at. No-op if the
+    signal_id already exists.
+    """
+    with closing(get_connection()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO signals (signal_id, person_id, source, payload, observed_at)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (signal_id) DO NOTHING
+                """,
+                (signal_id, person_id, source, json.dumps(payload), observed_at),
+            )
+        conn.commit()
+
+
 def get_events(person_id: str | None = None) -> list[dict]:
     """Return ledger events newest-first, optionally filtered by person."""
-    with get_connection() as conn:
+    with closing(get_connection()) as conn:
         with conn.cursor() as cur:
             if person_id is None:
                 cur.execute(
