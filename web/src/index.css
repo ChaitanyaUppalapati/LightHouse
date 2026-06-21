@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* Lighthouse design tokens — calm, trustworthy, built for an older person's family.
+   Base font is large on purpose: nothing on these screens should be below 18px. */
+:root {
+  color-scheme: light;
+}
+
+html {
+  font-size: 18px; /* 1rem = 18px, so default body text already clears the 18px floor */
+}
+
+body {
+  margin: 0;
+  /* Figtree: clean, accessible, trustworthy (design-system pick for healthcare).
+     System fonts stay as the fallback so text never disappears while the font loads. */
+  font-family: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  background-color: #f1f5f9; /* slate-100 — soft, not stark white */
+  color: #0f172a; /* slate-900 — high contrast */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Make focus obvious for keyboard users / accessibility. */
+:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Gentle entrance animation. Motion is OFF by default and only enabled when the
+   user has NOT asked their system to reduce motion — accessibility first. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.4s ease-out both;
+  }
+}
