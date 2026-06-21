@@ -40,7 +40,15 @@ from init_db import apply_schema                      # noqa: E402
 import ledger                                         # noqa: E402
 import approvals                                      # noqa: E402
 from sentry_setup import init_sentry                  # noqa: E402
-import gmail_feed                                      # noqa: E402
+
+# K6 (real Gmail) is an optional stretch feature. Guard its import so the core
+# data service still starts when the google libraries aren't installed — without
+# this, a missing google dep would crash the whole service (feed, ledger,
+# approvals) on the mock/demo path. None -> always use the mock feed.
+try:
+    import gmail_feed                                  # noqa: E402
+except ImportError:
+    gmail_feed = None
 
 # Initialize Sentry before the app is created so every route is instrumented.
 # No-ops if SENTRY_DSN is empty, so the app still runs without a Sentry account.
@@ -116,7 +124,7 @@ def next_signal() -> dict:
     # Prefer a real unread Gmail message (K6); fall back to the mock list so the
     # feed never breaks if Gmail/OAuth is unavailable or the inbox is empty.
     signal = None
-    if gmail_feed.has_token():
+    if gmail_feed is not None and gmail_feed.has_token():
         try:
             signal = gmail_feed.next_unread_signal(_served_gmail_ids)
         except Exception as exc:  # noqa: BLE001 — any Gmail hiccup -> use the mock
