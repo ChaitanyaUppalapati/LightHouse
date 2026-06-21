@@ -39,6 +39,11 @@ from sample_emails import SAMPLE_EMAILS               # noqa: E402
 from init_db import apply_schema                      # noqa: E402
 import ledger                                         # noqa: E402
 import approvals                                      # noqa: E402
+from sentry_setup import init_sentry                  # noqa: E402
+
+# Initialize Sentry before the app is created so every route is instrumented.
+# No-ops if SENTRY_DSN is empty, so the app still runs without a Sentry account.
+init_sentry()
 
 
 @asynccontextmanager
@@ -82,6 +87,15 @@ def _email_to_signal(email: dict) -> Signal:
 @app.get("/")
 def health():
     return {"service": "lighthouse-data", "status": "ok", "emails": len(SAMPLE_EMAILS)}
+
+
+@app.get("/sentry-test")
+def sentry_test():
+    """Deliberately raise so Sentry captures it — confirm it lands in the dashboard."""
+    raise RuntimeError(
+        "Sentry test error from the Lighthouse data service. "
+        "If you can see this in Sentry, error capture is working."
+    )
 
 
 @app.get("/signals/next")
