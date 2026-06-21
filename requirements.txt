@@ -13,3 +13,7 @@ stagehand
 # C6 — Phoenix (Arize Phoenix) tracing + Anthropic auto-instrumentation
 arize-phoenix-otel
 openinference-instrumentation-anthropic
+# C6 — Phoenix evals + client (LLM-as-judge over traces, log annotations back)
+arize-phoenix-client
+arize-phoenix-evals
+pandas

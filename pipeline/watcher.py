@@ -69,7 +69,20 @@ Classify it into:
 
 Scam cues include: mismatched/look-alike sender domains, urgency and threats, demands
 for payment or credentials, too-good-to-be-true prizes or refunds. Ordinary mail
-(family notes, pharmacy pickups, appointment reminders) is benign with severity none."""
+(family notes, pharmacy pickups, appointment reminders) is benign with severity none.
+
+IMPORTANT — do not over-flag legitimate security and transactional notices. Banks,
+Apple/Google/Microsoft, and other real services routinely send sign-in alerts,
+"card temporarily locked", password-reset codes, and fraud-confirmation notices.
+Treat such a message as benign (NOT account_risk, NOT scam_phishing) when ALL of
+these hold: the sender domain is the provider's real domain (e.g. chase.com,
+accounts.google.com, okta.com — not a look-alike like secure-bank-help.com), it does
+NOT demand a password/PIN/card number or a payment, it has no suspicious or
+look-alike link, and it tells the person they can verify through the app or a number
+on their card (or simply ignore it). Only use account_risk when there is a genuine,
+actionable compromise — and use scam_phishing the moment a look-alike domain,
+credential/payment demand, or suspicious link is present, however polished the
+wording is."""
 
 # Structured-output schema mirroring the ThreatAssessment classification fields.
 _OUTPUT_SCHEMA = {
