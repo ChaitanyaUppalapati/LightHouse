@@ -91,6 +91,33 @@ The agent's profile then gets a **Chat with Agent** button that opens it in ASI:
 - `WARNING: Agent mailbox not found: create one using the agent inspector` — expected
   **until** you do the Inspector → Connect → Mailbox step above; it clears once connected.
 
+## Running with REAL computer-use (DEMO_MODE=0)
+
+By default the executor returns an instant fake result (`DEMO_MODE=1`). To have it
+actually drive a browser via Browserbase + Stagehand, you need three things:
+
+1. **Install Stagehand:** `py -3.12 -m pip install stagehand` (already in requirements.txt).
+2. **Make the mock pages public.** Browserbase runs the browser in the *cloud*, so it
+   cannot reach `localhost:5173`. Run the web app and expose it:
+   ```
+   cd web && npm run dev                       # terminal 1 -> http://localhost:5173
+   cloudflared tunnel --url http://localhost:5173   # terminal 2 -> prints https://<rand>.trycloudflare.com
+   ```
+   (Install cloudflared once: `winget install cloudflare.cloudflared`, or use ngrok.)
+   Then point the URLs at the public tunnel in `.env`:
+   ```
+   MOCK_INBOX_URL=https://<rand>.trycloudflare.com/inbox
+   MOCK_BANK_URL=https://<rand>.trycloudflare.com/bank
+   ```
+3. **Run with `DEMO_MODE=0`.** The executor opens the public inbox, clicks the flagged
+   email, and clicks "Move to Quarantine" (the page's `data-testid`s make it findable).
+   Evidence comes back as a Browserbase **session id + replay URL** (the recording is
+   the proof — there's no screenshot op in the SDK).
+
+The live Stagehand API (sync `Stagehand` client, `sessions.start/navigate/act/end`,
+`model_name="anthropic/claude-sonnet-4-6"`) is verified working with the project keys.
+Keep `DEMO_MODE=1` for the ASI:One chat demo; use `DEMO_MODE=0` at the Browserbase booth.
+
 ## Notes
 
 - Run on Python 3.11/3.12 (uagents does not import on 3.14).
