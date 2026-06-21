@@ -6,6 +6,7 @@ tables exist, and runnable directly:  python data/init_db.py
 """
 
 import os
+from contextlib import closing
 
 from db import get_connection
 
@@ -16,7 +17,9 @@ def apply_schema():
     """Create all Lighthouse tables if they don't already exist."""
     with open(SCHEMA_PATH, "r") as f:
         ddl = f.read()
-    with get_connection() as conn:
+    # closing() guarantees the connection is closed; the inner `with conn`
+    # context only handles the transaction (commit/rollback), not the close.
+    with closing(get_connection()) as conn:
         with conn.cursor() as cur:
             cur.execute(ddl)
         conn.commit()

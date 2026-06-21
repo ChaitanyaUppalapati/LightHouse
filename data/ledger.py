@@ -8,6 +8,7 @@ decisions to the ledger through add_event()).
 
 import json
 import os
+from contextlib import closing
 
 from db import get_connection
 
@@ -18,7 +19,7 @@ def apply_append_only():
     """Make ledger_events append-only (REVOKE + trigger). Idempotent."""
     with open(_LOCKDOWN_SQL, "r") as f:
         sql = f.read()
-    with get_connection() as conn:
+    with closing(get_connection()) as conn:
         with conn.cursor() as cur:
             cur.execute(sql)
         conn.commit()
@@ -27,7 +28,7 @@ def apply_append_only():
 def add_event(event_type: str, details: dict | None = None,
               person_id: str | None = None) -> dict:
     """Append one event to the ledger and return the stored row."""
-    with get_connection() as conn:
+    with closing(get_connection()) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -44,7 +45,7 @@ def add_event(event_type: str, details: dict | None = None,
 
 def get_events(person_id: str | None = None) -> list[dict]:
     """Return ledger events newest-first, optionally filtered by person."""
-    with get_connection() as conn:
+    with closing(get_connection()) as conn:
         with conn.cursor() as cur:
             if person_id is None:
                 cur.execute(

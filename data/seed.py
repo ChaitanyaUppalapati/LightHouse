@@ -10,6 +10,7 @@ like. Run it with:  python data/seed.py
 
 import os
 import sys
+from contextlib import closing
 
 # Make both this folder (for db/init_db) and the repo root (for lighthouse_common)
 # importable, regardless of where python is invoked from.
@@ -30,7 +31,7 @@ PRIYA_NAME = "Priya"
 def seed():
     apply_schema()  # tables must exist before we insert
 
-    with get_connection() as conn:
+    with closing(get_connection()) as conn:
         with conn.cursor() as cur:
             # Demo person. ON CONFLICT keeps re-runs safe and refreshes the name.
             cur.execute(
@@ -66,7 +67,7 @@ def seed():
 
 def verify():
     """Read back what we seeded and print a clear confirmation."""
-    with get_connection() as conn:
+    with closing(get_connection()) as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT name, person_id FROM people WHERE person_id = %s",
                         (MARGARET_PERSON_ID,))
