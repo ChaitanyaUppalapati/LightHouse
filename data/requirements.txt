@@ -8,3 +8,7 @@ psycopg2-binary
 python-dotenv
 uagents
 sentry-sdk[fastapi]
+# K6 real Gmail feed (stretch)
+google-api-python-client
+google-auth
+google-auth-oauthlib

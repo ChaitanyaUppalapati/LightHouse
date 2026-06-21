@@ -31,6 +31,21 @@ python data/main.py
 | POST | `/approvals/{id}/decide` | dashboard records approved/denied |
 | GET | `/sentry-test` | deliberately errors to verify Sentry capture |
 
+## Real Gmail feed (K6, stretch)
+
+`/signals/next` prefers a real **unread** email from a test Gmail account (read-only
+OAuth) and **falls back to the mock list** if Gmail isn't set up, the token is
+missing/expired, or the inbox is empty — so the demo never breaks.
+
+One-time setup:
+1. In Google Cloud, create an OAuth client (Desktop app), download it as
+   `credentials.json` at the repo root, and add your test account under
+   **Audience → Test users**.
+2. Authorize once (opens a browser to click *Allow*): `python data/gmail_feed.py`
+   — this saves `token.json`. After that the server uses the token silently.
+
+`credentials.json` and `token.json` are secrets — both are gitignored, never commit them.
+
 ## Sentry (K5)
 
 Sentry auto-captures errors and slow requests. Set `SENTRY_DSN` in `.env` (free

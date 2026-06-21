@@ -40,6 +40,7 @@ from init_db import apply_schema                      # noqa: E402
 import ledger                                         # noqa: E402
 import approvals                                      # noqa: E402
 from sentry_setup import init_sentry                  # noqa: E402
+import gmail_feed                                      # noqa: E402
 
 # Initialize Sentry before the app is created so every route is instrumented.
 # No-ops if SENTRY_DSN is empty, so the app still runs without a Sentry account.
@@ -64,6 +65,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Tracks which real Gmail messages we've already served this run (read-only scope
+# can't mark mail as read, so we de-dupe in memory).
+_served_gmail_ids: set = set()
 
 # Endless rotation over the built-in emails so /signals/next always returns the
 # "next" one and wraps around forever.
@@ -108,7 +113,17 @@ def next_signal() -> dict:
     via pydantic's own .json() — which renders observed_at as an ISO string —
     and return a plain JSON-ready dict.
     """
-    signal = _email_to_signal(next(_email_cycle))
+    # Prefer a real unread Gmail message (K6); fall back to the mock list so the
+    # feed never breaks if Gmail/OAuth is unavailable or the inbox is empty.
+    signal = None
+    if gmail_feed.has_token():
+        try:
+            signal = gmail_feed.next_unread_signal(_served_gmail_ids)
+        except Exception as exc:  # noqa: BLE001 — any Gmail hiccup -> use the mock
+            print(f"[gmail] falling back to mock feed: {exc}")
+    if signal is None:
+        signal = _email_to_signal(next(_email_cycle))
+
     # Persist the signal so a later ThreatAssessment can reference it (FK seam).
     ledger.save_signal(
         signal.signal_id,
