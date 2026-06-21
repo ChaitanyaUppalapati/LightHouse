@@ -14,3 +14,7 @@ web/dist/
 
 # Preflight state (local only)
 .claude/state/
+
+# Gmail OAuth secrets (K6) — never commit
+credentials.json
+token.json
