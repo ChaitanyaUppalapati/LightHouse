@@ -2,7 +2,7 @@
 
 **A protective multi-agent system that quietly holds together the digital life of a person whose cognition is declining — acting with family oversight, never overstepping.**
 
-UC Berkeley AI Hackathon 2026. Target prizes: Anthropic, Fetch.ai, Simular, Sentry, Arize.
+UC Berkeley AI Hackathon 2026. Target prizes: Anthropic, Fetch.ai, Browserbase, Sentry, Arize.
 
 ---
 
@@ -163,9 +163,9 @@ Reversibility picks the column (act-alone vs ask). Confidence picks the row (act
 
 ---
 
-## 7. Execution paths + the computer-use executor (Simular)
+## 7. Execution paths + the computer-use executor (Browserbase + Stagehand)
 
-Both routes, once cleared, run through one **computer-use executor** built on **Simular** (Agent S / Sai). This is where the system acts on real interfaces — because these services have no clean "trusted third party acts on this account" API; you operate the UI the way a person would, which is precisely Simular's purpose.
+Both routes, once cleared, run through one **computer-use executor** built on **Browserbase + Stagehand** (Stagehand is Browserbase's open-source browser-agent framework: `act()`/`observe()` primitives driving a cloud browser session). This is where the system acts on real interfaces — because these services have no clean "trusted third party acts on this account" API; you operate the UI the way a person would. Browserbase is a hackathon sponsor, so this layer also carries a prize. (Fallbacks if access stalls: the open-source Browser Use library, or a plain Playwright script over our own mock pages.)
 
 - **Autonomous path:** reversible+low-stakes proposals execute immediately, then notify. Each returns an `undo_token` so a wrong call is recoverable.
 - **Human-gate path:** the Escalation agent sends the guardian an approval request; only on approval does the executor run. Denial is logged and the action never happens.
@@ -209,7 +209,7 @@ Every integration is load-bearing, not bolted on:
 
 - **Anthropic** — built with Claude Code; Claude is the reasoning in Watcher/Guardian/Escalation; "protecting people losing cognitive capacity" is dead-center in their health / biggest-swing brief.
 - **Fetch.ai** — the three agents are real uAgents collaborating over the Fetch layer; satisfies BAND's ≥2-agents bar by design.
-- **Simular** — the executor operates real interfaces via computer-use; the most-justified Simular use case there is (acting on accounts the person can no longer safely operate).
+- **Browserbase** — the executor operates real interfaces via Stagehand on a Browserbase browser session; acting on accounts the person can no longer safely operate is a strong, justified use case.
 - **Arize** — the eval loop in §9; the agent graph is the observability subject.
 - **Sentry** — instrument the pipeline with the Sentry SDK for error/performance monitoring. Computer-use *fails constantly*, so Sentry catching and surfacing those failures is a genuine integration, not theater. Their judging also rewards team execution and communication under pressure — so you win this by using the SDK for real *and* demoing with poise.
 
@@ -224,7 +224,7 @@ Every integration is load-bearing, not bolted on:
 | Build tool | Claude Code |
 | Reasoning LLM | Claude |
 | Agent runtime | Fetch.ai uAgents (Watcher / Guardian / Escalation) |
-| Computer use | Simular (Agent S / Sai) |
+| Browser-agent executor | Browserbase + Stagehand (fallback: Browser Use, or Playwright) |
 | Tracing + eval | Arize |
 | Error monitoring | Sentry SDK |
 | Backend | FastAPI + Pydantic |
@@ -236,13 +236,13 @@ Every integration is load-bearing, not bolted on:
 
 ## 12. Demo architecture + DEMO_MODE
 
-**Never operate real accounts on stage.** Build **controlled stand-in interfaces** — a mock email inbox and a mock banking page that look real — and point Simular at those. The computer-use is genuinely real (Simular drives a real UI); only the *accounts* are stand-ins. This keeps the demo live and honest while removing the ethical and reliability landmine.
+**Never operate real accounts on stage.** Build **controlled stand-in interfaces** — a mock email inbox and a mock banking page that look real — and point the browser agent at those. The computer-use is genuinely real (Stagehand drives a real browser); only the *accounts* are stand-ins. This keeps the demo live and honest while removing the ethical and reliability landmine.
 
 **Hero demo, two scenarios to show both paths:**
-1. *Autonomous path:* a phishing email arrives on stage → Watcher flags it (high confidence, scam) → Guardian proposes `quarantine_email` (reversible, low) → classifier routes autonomous → Simular quarantines it in the stand-in inbox → ledger logs → guardian dashboard updates. Visceral, fast, proves the agents act.
+1. *Autonomous path:* a phishing email arrives on stage → Watcher flags it (high confidence, scam) → Guardian proposes `quarantine_email` (reversible, low) → classifier routes autonomous → the browser agent quarantines it in the stand-in inbox → ledger logs → guardian dashboard updates. Visceral, fast, proves the agents act.
 2. *Human-gate path:* a "your account is locked — pay $200 to restore" scam → Watcher flags → Guardian proposes a high-stakes action → classifier routes to human gate → guardian's phone gets an approval request → guardian **denies** → logged, nothing happens. Proves the safety thesis live.
 
-**DEMO_MODE:** cached Simular runs and scripted interface states so a flaky live computer-use call degrades to an identical-looking cached path instead of a dead demo.
+**DEMO_MODE:** cached browser-agent runs and scripted interface states so a flaky live computer-use call degrades to an identical-looking cached path instead of a dead demo.
 
 ---
 
@@ -262,7 +262,7 @@ Nothing Lighthouse outputs is medical, legal, or financial advice; the human-in-
 - Watcher classifying **email scams** (one signal type), as a Fetch uAgent, traced in Arize.
 - Guardian proposing from a **3-action registry** (`quarantine_email`, `flag_transaction`, `pay_bill`), as a Fetch uAgent.
 - Deterministic action classifier + the routing matrix.
-- Simular executor on a **mock inbox** (autonomous quarantine) + a **mock bank** approval (human-gate deny).
+- Browser-agent executor (Browserbase + Stagehand) on a **mock inbox** (autonomous quarantine) + a **mock bank** approval (human-gate deny).
 - Escalation approval/ack loop (reuse OpenPill's).
 - Append-only ledger + Sentry instrumentation.
 - Two-role dashboard: guardian approval UI + live ledger view; PP reassurance view (can be simple).
@@ -276,10 +276,10 @@ Nothing Lighthouse outputs is medical, legal, or financial advice; the human-in-
 
 ## 15. Three-person build split (hard technical → Chaitanya)
 
-**Chaitanya — the agent spine + the brain (and 3 prizes):** the three Fetch uAgents (Watcher/Guardian/Escalation orchestration), the deterministic action classifier + registry, the Simular executor integration, and the Arize tracing + evaluator loop. This is the technical heart and carries Fetch, Simular, and Arize.
+**Chaitanya — the agent spine + the brain (and 3 prizes):** the three Fetch uAgents (Watcher/Guardian/Escalation orchestration), the deterministic action classifier + registry, the Browserbase + Stagehand executor integration, and the Arize tracing + evaluator loop. This is the technical heart and carries Fetch, Browserbase, and Arize.
 
 **Teammate 2 — data, ledger, workflow, Sentry:** Postgres schema for the §2 objects, the append-only ledger, the escalation approval/ack loop (port from OpenPill), the two-role permission model, and Sentry instrumentation across the pipeline.
 
-**Teammate 3 — interfaces + demo + pitch:** the two-role React dashboard (guardian approval + live ledger/trace view + PP reassurance), the **stand-in mock inbox and mock bank** that Simular drives (demo-critical infrastructure), the deck, and the demo script for both scenarios.
+**Teammate 3 — interfaces + demo + pitch:** the two-role React dashboard (guardian approval + live ledger/trace view + PP reassurance), the **stand-in mock inbox and mock bank** that the browser agent drives (demo-critical infrastructure), the deck, and the demo script for both scenarios.
 
 Shared hour-0 task, all three: freeze the §2 state model into `schemas.py`, agree the action registry, pin demo identities. Then build against mocks in parallel; integrate around the executor last.

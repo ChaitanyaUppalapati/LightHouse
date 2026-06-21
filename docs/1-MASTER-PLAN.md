@@ -2,10 +2,10 @@
 
 **This is the single plan for the whole team. Read it top to bottom. You'll see what all three of you are doing at the same time, who is waiting on whom, and the exact prompts to paste into Claude Code.**
 
-Building: a multi-agent system that protects the digital life of someone whose memory is declining, with family oversight. Full design is in `architecture.md` (skim once). Target prizes: Anthropic, Fetch.ai, Simular, Sentry, Arize.
+Building: a multi-agent system that protects the digital life of someone whose memory is declining, with family oversight. Full design is in `architecture.md` (skim once). Target prizes: Anthropic, Fetch.ai, Browserbase, Sentry, Arize.
 
 Team and tracks:
-- **Chaitanya** -> `pipeline/` folder: the AI agents, the safety gate, the computer-use executor, Arize. (Carries Fetch, Simular, Arize.)
+- **Chaitanya** -> `pipeline/` folder: the AI agents, the safety gate, the computer-use executor, Arize. (Carries Fetch, Browserbase, Arize.)
 - **Keya** -> `data/` folder: the database, the event log, the email feed, the approval bridge, Sentry.
 - **Sonakshi** -> `web/` folder: the family dashboard, the person's screen, the fake inbox and bank, the pitch.
 
@@ -48,7 +48,7 @@ Never edit the two frozen files (`schemas.py`, `action_registry.yaml`). They are
 | *Checkpoint 1 (~6h)* | Watcher reads Keya's feed | — | — |
 | **Block B 8-12h** | C3 Guardian, C4 Escalation | K4 approval bridge, K5 Sentry | S3 person screen, S4 fake inbox |
 | *Checkpoint 2 (~12h)* | **Autonomous path end-to-end (all three)** | | |
-| **Block C 12-16h** | C5 Simular executor, C6 Arize | K6 real Gmail (stretch) | S5 fake bank, S6 connect backend |
+| **Block C 12-16h** | C5 browser-agent executor, C6 Arize | K6 real Gmail (stretch) | S5 fake bank, S6 connect backend |
 | *Checkpoint 3 (~15h)* | **Human-gate path + Arize before/after (all three)** | | |
 | **Block D 16-19h** | C7 integration + harden | support + DEMO_MODE | S7 deck + rehearse, S8 voice (stretch) |
 | **Submit 19-20h** | **Devpost submission + booth visits (all three)** | | |
@@ -60,7 +60,7 @@ The critical chain that must not stall: **C0 -> K2 -> C1**. That is the path to 
 ## SETUP (hours 0-2) — all three together
 
 1. All three install Claude Code (`npm install -g @anthropic-ai/claude-code`) and log in.
-2. All three split up and collect sponsor credits: Claude credits first (you burn these), then Simular access, then the Fetch code, then sign up for Arize and Sentry (free). Don't all sit in one workshop.
+2. All three split up and collect sponsor credits: Claude credits first (you burn these), then Browserbase access (for the browser-agent executor), then the Fetch code, then sign up for Arize and Sentry (free). Don't all sit in one workshop.
 3. Chaitanya creates a private GitHub repo `lighthouse`, adds Keya and Sonakshi, then runs **C0** below and pushes.
 4. Keya and Sonakshi: once C0 is pushed, `git clone` the repo, `cp .env.example .env`, paste your credit codes into `.env`. Then start your first task.
 
@@ -86,7 +86,7 @@ foundation. Use plan mode first, then create:
    reply_to_sender(no,high).
 4. lighthouse_common/demo_ids.py — fixed UUIDs for demo person "Margaret" and guardian "Priya".
 5. README, .env.example with empty keys (ANTHROPIC_API_KEY, ARIZE_API_KEY, SENTRY_DSN, Fetch and
-   Simular keys, DEEPGRAM_KEY), plus DATABASE_URL, VITE_DATA_URL, MOCK_INBOX_URL, MOCK_BANK_URL,
+   BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, DEEPGRAM_KEY), plus DATABASE_URL, VITE_DATA_URL, MOCK_INBOX_URL, MOCK_BANK_URL,
    DEMO_MODE=0.
 6. docker-compose.yml running Postgres image pgvector/pgvector:pg16.
 Add a top comment to schemas.py and action_registry.yaml: "FROZEN — do not edit, ask the team first."
@@ -256,7 +256,7 @@ button that turns off protection — only family can. No settings or off switche
 ```
 Done when: /me loads and feels calm and safe. Commit.
 
-**S4 — the fake inbox the robot acts on** (demo-critical: Chaitanya's Simular drives this). UNBLOCKS: Chaitanya's C5.
+**S4 — the fake inbox the robot acts on** (demo-critical: Chaitanya's browser agent drives this). UNBLOCKS: Chaitanya's C5.
 
 ```
 Use plan mode first. Build a standalone page at route /inbox that looks like a real email inbox (list
@@ -270,7 +270,7 @@ Done when: you can manually move a scam email to Quarantine and see it move. **T
 ### CHECKPOINT 2 (~hour 12) — all three: the autonomous path end-to-end
 
 Wire the full happy path with real pieces: Keya's feed -> Chaitanya's Watcher flags a scam ->
-Guardian proposes quarantine -> gate says autonomous -> (for now, before Simular) the action is
+Guardian proposes quarantine -> gate says autonomous -> (for now, before the executor) the action is
 recorded -> the event shows on Sonakshi's dashboard history. This is demo scenario 1. Get it working
 before Block C. Whoever's seam breaks, pair on it with the error pasted into Claude Code.
 
@@ -280,17 +280,33 @@ before Block C. Whoever's seam breaks, pair on it with the error pasted into Cla
 
 ### Chaitanya
 
-**C5 — the Simular executor** (your Simular prize). NEEDS: Sonakshi's S4 inbox and S5 bank; use example.com until they exist.
+**C5 — the browser-agent executor** (your Browserbase prize). NEEDS: Sonakshi's S4 inbox and S5 bank; use example.com until they exist.
+
+This is the part that lets the AI actually operate a web page like a human (click the email, move it to Quarantine). We use **Browserbase + Stagehand** — Browserbase is a hackathon sponsor with its own prize, and Stagehand is its open-source framework with simple commands (`act()` to click/type, `observe()` to find elements). **Go to the Browserbase booth first** and confirm you can get an API key for the event; this is the riskiest task, so settle access before building.
 
 ```
 Use plan mode first. In pipeline/executor.py build an executor that takes an approved ActionProposal
-and performs it on a real web interface using Simular / Agent S (read SIMULAR key from .env). Two
-actions: quarantine_email (open MOCK_INBOX_URL, move the flagged email to Quarantine) and the pay
-action (open MOCK_BANK_URL — only ever after approval). Return an ActionResult with a screenshot as
-evidence and an undo_token where possible. Add a DEMO_MODE path: if DEMO_MODE=1, skip the real Simular
-call and return a realistic fake ActionResult instantly (so the demo survives bad wifi).
+and performs it on a real web page using Browserbase + Stagehand (the Stagehand SDK driving a
+Browserbase browser session; read BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID from .env). Two
+actions: quarantine_email (open MOCK_INBOX_URL, use Stagehand act() to click the flagged email and
+click "Move to Quarantine") and the pay action (open MOCK_BANK_URL — only ever after approval).
+Return an ActionResult with a screenshot as evidence and an undo_token where possible. Add a
+DEMO_MODE path: if DEMO_MODE=1, skip the real browser call and return a realistic fake ActionResult
+instantly (so the demo survives bad wifi).
 ```
-Done when: with DEMO_MODE=1 it returns a clean fake result instantly; with real Simular it drives the inbox. Commit. **Go to the Simular booth early — this is the riskiest task.**
+Done when: with DEMO_MODE=1 it returns a clean fake result instantly; with real Browserbase it drives the mock inbox. Commit.
+
+**Fallback if Browserbase keys are ALSO unavailable** — paste this instead (free, local, no booth needed):
+```
+Use plan mode first. Rebuild pipeline/executor.py to use the open-source Browser Use library
+(Python, runs locally, no account needed) instead of Browserbase. Same two actions on MOCK_INBOX_URL
+and MOCK_BANK_URL, same ActionResult output, same DEMO_MODE fallback. Keep the executor's function
+signature identical so nothing else in the pipeline changes.
+```
+If even that fights you with under ~4 hours left, tell Claude Code: "replace the browser agent with a
+simple Playwright script that clicks the known buttons on my mock pages" — for pages we built and
+control, a fixed script demos identically. (If you drop to Playwright you lose the Browserbase prize
+but keep the working demo.)
 
 **C6 — Arize tracing + the evaluator** (the $1,000 cash; your highest-value half-day).
 
@@ -353,7 +369,7 @@ the Arize before/after screenshot. These two scenarios are the entire demo.
 - **Keya:** help test both paths; confirm the ledger shows the full trail for each scenario; make sure Sentry is catching executor errors.
 - **Sonakshi (S7):** build the ~6-slide deck and run the full demo start-to-finish 3 times, timed to 2:40, including once in DEMO_MODE so everyone has felt the fallback. You hold the timer and direct who says what.
 
-Deck (Sonakshi owns this; no AI writes your pitch): 1) the problem — someone you love is losing track of their digital life and scammers know it; 2) what Lighthouse is — watches, acts on safe things, asks family about risky things (say: not medical/financial advice, family stays in control); 3) live demo; 4) how it's safe — safe+reversible = it acts, risky+irreversible = it asks, always; 5) the person can't disable their own protection, only family can; 6) what's real + sponsors used (Claude, Fetch agents, Simular, Arize, Sentry).
+Deck (Sonakshi owns this; no AI writes your pitch): 1) the problem — someone you love is losing track of their digital life and scammers know it; 2) what Lighthouse is — watches, acts on safe things, asks family about risky things (say: not medical/financial advice, family stays in control); 3) live demo; 4) how it's safe — safe+reversible = it acts, risky+irreversible = it asks, always; 5) the person can't disable their own protection, only family can; 6) what's real + sponsors used (Claude, Fetch agents, Browserbase, Arize, Sentry).
 
 Demo script (rehearse to 2:40): dashboard -> scam email arrives -> flagged and auto-quarantined on the inbox -> family screen shows "I handled this" -> scarier scam -> approval request appears -> tap Deny live -> logged. End line: "smart enough to act, safe enough to ask."
 

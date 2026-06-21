@@ -13,7 +13,7 @@ See `docs/1-MASTER-PLAN.md` for the build plan and `docs/2-architecture-referenc
 
 | Folder | Owner | What's in it |
 |---|---|---|
-| `pipeline/` | Chaitanya | the AI agents (Watcher / Guardian / Escalation), the deterministic safety gate, the Simular executor, Arize |
+| `pipeline/` | Chaitanya | the AI agents (Watcher / Guardian / Escalation), the deterministic safety gate, the Browserbase + Stagehand executor, Arize |
 | `data/` | Keya | Postgres schema, the append-only ledger, the mock email feed, the approval bridge, Sentry |
 | `web/` | Sonakshi | the family dashboard, the protected-person screen, the mock inbox & bank, the pitch |
 | `lighthouse_common/` | shared | the frozen contract: `schemas.py`, `action_registry.yaml`, `demo_ids.py` |
