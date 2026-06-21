@@ -57,12 +57,23 @@ init_tracing()
 # mailbox=True registers on Agentverse for ASI:One. Set AGENT_MAILBOX=0 to run the
 # agent purely locally (e.g. the end-to-end Bureau demo, pipeline/demo_e2e.py).
 _MAILBOX = os.getenv("AGENT_MAILBOX", "1") == "1"
+# Three ways to run, in priority order:
+#   AGENT_ENDPOINT set -> register by a PUBLIC endpoint (the Agentverse "Add your agent
+#       details" wizard: tunnel port 8104 and pass https://<tunnel>/submit).
+#   AGENT_MAILBOX=1     -> mailbox (Inspector -> Connect), no public endpoint needed.
+#   AGENT_MAILBOX=0     -> fully local (Bureau demos).
+_ENDPOINT = os.getenv("AGENT_ENDPOINT")
+if _ENDPOINT:
+    _conn = {"endpoint": [_ENDPOINT], "publish_agent_details": True}
+elif _MAILBOX:
+    _conn = {"mailbox": True, "publish_agent_details": True}
+else:
+    _conn = {}
 agent = Agent(
     name="lighthouse",
     seed=os.getenv("LIGHTHOUSE_AGENT_SEED", "lighthouse-asi-one-coordinator-seed"),
     port=int(os.getenv("AGENT_PORT", "8104")),
-    mailbox=_MAILBOX,
-    publish_agent_details=_MAILBOX,
+    **_conn,
 )
 
 chat = Protocol(spec=chat_protocol_spec)
