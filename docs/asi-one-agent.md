@@ -48,6 +48,14 @@ Type a message, then a blank line to send; `quit` to exit. Paste a phishing emai
 auto-quarantines), a "pay $200 to unlock" scam (it asks → you type `deny`), or a normal
 note (no action). Use `DEMO_MODE=0` with the tunnel (below) to drive a real browser.
 
+**Local web UI** — a browser chat page over the same pipeline (Approve/Deny buttons for
+the human-gate). A good `DEMO_MODE` backup and a way to demo before connecting ASI:One:
+
+```
+AGENT_MAILBOX=0 DEMO_MODE=1 python -m uvicorn pipeline.chat_web:app --port 8200
+# then open http://localhost:8200
+```
+
 **Scripted demo** — plays both scenarios automatically (good for a quick screen-record):
 
 ```
