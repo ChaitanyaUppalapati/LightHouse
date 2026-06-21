@@ -1,0 +1,10 @@
+# Python deps for the data/ service. Install with:
+#   pip install -r data/requirements.txt
+# (The repo-root requirements.txt covers the shared deps; this adds sentry-sdk
+# for K5 and pins the data service's full set so it runs standalone.)
+fastapi
+uvicorn
+psycopg2-binary
+python-dotenv
+uagents
+sentry-sdk[fastapi]
