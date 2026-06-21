@@ -16,10 +16,10 @@ export const speechSupported =
 // and stays deliberately simple and soothing — never alarming, never advice.
 export function answerFor(question) {
   const q = (question || "").toLowerCase();
-  if (/scam|safe|email|message|fake|fraud|hack|virus/.test(q))
-    return "Don't worry. I'm watching your inbox for you. If anything looks risky, I move it aside and check with your family. You never have to decide on your own.";
   if (/money|pay|bank|card|account|dollar|bill/.test(q))
     return "Money never leaves your account without your family saying yes first. If someone asks you to pay, I'll check with Priya before anything happens.";
+  if (/scam|safe|email|message|fake|fraud|hack|virus/.test(q))
+    return "Don't worry. I'm watching your inbox for you. If anything looks risky, I move it aside and check with your family. You never have to decide on your own.";
   if (/lonely|sad|scared|worried|afraid|alone|nervous/.test(q))
     return "You're not alone. Priya is just a phone call away, and I'm here watching out for you. Everything is okay.";
   if (/who are you|what do you do|what are you|help/.test(q))
